@@ -26,7 +26,7 @@ services:
       - node.name=es00
       - cluster.initial_master_nodes=es00
       - cluster.name=es-cluster
-      - discovery.seed_hosts=es00,es01,es02
+      - discovery.seed_hosts=es00
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - node.master=true
