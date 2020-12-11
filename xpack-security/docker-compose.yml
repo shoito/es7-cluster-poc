@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  certs:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
+    container_name: certs-sec
+    command: >
+      bash -c '
+        if [[ ! -f ./config/certificates/elastic-certificates.p12 ]]; then
+          bin/elasticsearch-certutil cert -out config/certificates/elastic-certificates.p12 -pass ""
+        fi;
+        chown -R 1000:0 /usr/share/elasticsearch/config/certificates
+      '
+    user: "0"
+    working_dir: /usr/share/elasticsearch
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certificates
+    networks:
+      - elastic
+
+  es00:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
+    container_name: es00-sec
+    depends_on: [certs]
+    environment:
+      - node.name=es00
+      - cluster.initial_master_nodes=es00
+      - cluster.name=es-cluster
+      - discovery.seed_hosts=es00,es01,es02
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - node.master=true
+      - node.data=true
+      - node.ingest=true
+      - xpack.security.enabled=true
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.keystore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
+      - xpack.security.transport.ssl.truststore.path=/usr/share/elasticsearch/config/certificates/elastic-certificates.p12
+      - ELASTIC_PASSWORD=changeme
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data00:/usr/share/elasticsearch/data
+      - certs:/usr/share/elasticsearch/config/certificates
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.9.3
+    container_name: kibana-sec
+    depends_on: [es00]
+    ports:
+      - 5601:5601
+    environment:
+      - ELASTICSEARCH_URL=http://es00:9200
+      - ELASTICSEARCH_HOSTS=http://es00:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+    networks:
+      - elastic
+
+volumes:
+  certs:
+    driver: local
+  data00:
+    driver: local
+
+networks:
+  elastic:
+    external: true
