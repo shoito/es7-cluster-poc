@@ -3,7 +3,7 @@ version: "3.8"
 services:
   certs:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
-    container_name: certs-sec
+    container_name: xpack-security-certs
     command: >
       bash -c '
         if [[ ! -f ./config/certificates/elastic-certificates.p12 ]]; then
@@ -14,13 +14,13 @@ services:
     user: "0"
     working_dir: /usr/share/elasticsearch
     volumes:
-      - certs:/usr/share/elasticsearch/config/certificates
+      - xpack-security-certs:/usr/share/elasticsearch/config/certificates
     networks:
-      - elastic
+      - xpack-security
 
   es00:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.9.3
-    container_name: es00-sec
+    container_name: xpack-security-es00
     depends_on: [certs]
     environment:
       - node.name=es00
@@ -43,16 +43,16 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - data00:/usr/share/elasticsearch/data
-      - certs:/usr/share/elasticsearch/config/certificates
+      - xpack-security-data00:/usr/share/elasticsearch/data
+      - xpack-security-certs:/usr/share/elasticsearch/config/certificates
     ports:
       - 9200:9200
     networks:
-      - elastic
+      - xpack-security
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.9.3
-    container_name: kibana-sec
+    container_name: xpack-security-kibana
     depends_on: [es00]
     ports:
       - 5601:5601
@@ -62,14 +62,14 @@ services:
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=changeme
     networks:
-      - elastic
+      - xpack-security
 
 volumes:
-  certs:
+  xpack-security-certs:
     driver: local
-  data00:
+  xpack-security-data00:
     driver: local
 
 networks:
-  elastic:
+  xpack-security:
     external: true

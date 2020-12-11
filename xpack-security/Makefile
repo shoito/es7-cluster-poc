@@ -1,4 +1,4 @@
-NETWORK_NAME=elastic
+NETWORK_NAME=xpack-security
 
 .PHONY: build
 build:
